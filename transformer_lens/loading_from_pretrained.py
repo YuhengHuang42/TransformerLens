@@ -118,6 +118,7 @@ OFFICIAL_MODEL_NAMES = [
     "Llama-2-7b-chat-hf",
     "Llama-2-13b-hf",
     "Llama-2-13b-chat-hf",
+    "chavinlo/alpaca-native",
     # TODO Llama-2-70b-hf requires Grouped-Query Attention, see the paper https://arxiv.org/pdf/2307.09288.pdf
     "Baidicoot/Othello-GPT-Transformer-Lens",
     "bert-base-cased",
@@ -474,6 +475,7 @@ MODEL_ALIASES = {
     ],
     "Llama-2-7b-hf": ["Llama-2-7b", "meta-llama/Llama-2-7b-hf"],
     "Llama-2-7b-chat-hf": ["Llama-2-7b-chat", "meta-llama/Llama-2-7b-chat-hf"],
+    "chavinlo/alpaca-native": ["alpaca-7b", "chavinlo/alpaca-native"],
     "Llama-2-13b-hf": ["Llama-2-13b", "meta-llama/Llama-2-13b-hf"],
     "Llama-2-13b-chat-hf": ["Llama-2-13b-chat", "meta-llama/Llama-2-13b-chat-hf"],
     # TODO Llama-2-70b-hf requires Grouped-Query Attention, see the paper https://arxiv.org/pdf/2307.09288.pdf
@@ -565,15 +567,15 @@ def convert_hf_model_config(model_name: str, **kwargs):
         architecture = "LlamaForCausalLM"
     if official_model_name.startswith(
         ("llama-7b", "Llama-2-7b")
-    ):  # same architecture for LLaMA and Llama-2
+    ) or "alpaca-native" in official_model_name:  # same architecture for LLaMA and Llama-2
         cfg_dict = {
             "d_model": 4096,
             "d_head": 4096 // 32,
             "n_heads": 32,
             "d_mlp": 11008,
             "n_layers": 32,
-            "n_ctx": 2048 if official_model_name.startswith("llama-7b") else 4096,
-            "eps": 1e-6 if official_model_name.startswith("llama-7b") else 1e-5,
+            "n_ctx": 4096,
+            "eps": 1e-5,
             "d_vocab": 32000,
             "act_fn": "silu",
             "normalization_type": "RMS",
@@ -582,6 +584,11 @@ def convert_hf_model_config(model_name: str, **kwargs):
             "final_rms": True,
             "gated_mlp": True,
         }
+        if official_model_name.startswith("llama-7b") or "alpaca-native" in official_model_name:
+            cfg_dict["n_ctx"] = 2048
+            cfg_dict["eps"] = 1e-6
+        if "alpaca-native" in official_model_name:
+            cfg_dict['d_vocab'] = 32001
     elif official_model_name.startswith(
         "CodeLlama-7b"
     ):  # same architecture CodeLlama and Llama-2
